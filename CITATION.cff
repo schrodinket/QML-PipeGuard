@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the accompanying paper."
+title: "qml-pipeguard: drift-aware behavioral fingerprinting for quantum machine learning"
+authors:
+  - family-names: "Yeniaras"
+    given-names: "Esra"
+version: "1.0.0"
+date-released: "2026-07-01"
+url: "https://github.com/schrodinket/qml-pipeguard"
+license: MIT
+preferred-citation:
+  type: article
+  title: "QML-PipeGuard: Drift-Aware Behavioral Fingerprinting for Quantum Machine Learning Pipeline Integrity"
+  authors:
+    - family-names: "Yeniaras"
+      given-names: "Esra"
+  year: 2026
