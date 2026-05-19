@@ -1,13 +1,21 @@
 """
 paper-ready figures for the experiment json outputs.
 
-  fig_detection_bars : weak vs complete observable deviations
-  fig_sample_curve   : detection rate vs shot budget
-  fig_drift_panel    : pairwise drift across timepoints
+  fig_detection_bars : weak vs complete observable deviations,
+                       horizontal lollipops with tolerance line
+  fig_sample_curve   : detection rate vs shot budget, vertical
+                       lollipops on a log-x axis
+  fig_drift_panel    : fingerprint per timepoint (jittered markers
+                       with three distinct line styles) and a
+                       horizontal lollipop pairwise drift panel
 
-visual style aims for a calm three-tone palette
-(deep teal, bordeaux, olive) with light grid and
-no heavy borders.
+palette: deep teal (primary), amber (weak family), and a
+magenta-gold-teal trio for the three drift timepoints. bordeaux
+is reserved for threshold lines so it never collides with a
+timepoint marker color.
+
+no titles or in-figure descriptive text are written here; figure
+text belongs in the latex caption.
 """
 
 import argparse
@@ -18,15 +26,21 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from matplotlib.lines import Line2D
 
 
 # --- visual constants ---
 
-TEAL   = "#1f5f6b"   # primary
-BORDX  = "#9a3a3a"   # accent for thresholds / sneaky
-OLIVE  = "#8a8a3a"   # secondary
-SLATE  = "#3a3a44"   # text
-MIST   = "#d8d8d2"   # grid
+TEAL    = "#1f5f6b"   # primary
+AMBER   = "#c08a1c"   # weak family
+BORDX   = "#9a3a3a"   # thresholds (tolerance line, d_drift line)
+SLATE   = "#3a3a44"   # text
+MIST    = "#d8d8d2"   # grid
+
+# drift timepoint palette
+T0 = "#C71585"   # magenta
+T1 = "#FFB300"   # gold
+T2 = "#00897B"   # teal-green
 
 DPI = 220
 
@@ -36,8 +50,6 @@ def apply_style():
     mpl.rcParams.update({
         "font.family": "DejaVu Sans",
         "font.size": 10.5,
-        "axes.titlesize": 11.5,
-        "axes.titleweight": "normal",
         "axes.labelsize": 10.5,
         "axes.edgecolor": SLATE,
         "axes.linewidth": 0.8,
@@ -62,9 +74,9 @@ def load(p):
 
 
 def fig_detection_bars(d, out_path):
-    """per-observable honest vs sneaky deviation, weak-family
-    entries in olive, complete-family entries in teal, tolerance
-    line in bordeaux."""
+    """horizontal lollipops, weak family in amber, complete family
+    in teal, tolerance line in bordeaux. no title, no in-figure
+    eps label (the legend entry carries the value)."""
     weak_set = set(d.get("weak_family", []))
     family = d["complete_family"]
     if weak_set and not (weak_set <= set(family)):
@@ -73,36 +85,46 @@ def fig_detection_bars(d, out_path):
     fp_h = d["fingerprint_honest"]
     fp_s = d["fingerprint_sneaky"]
     devs = [abs(fp_h[p] - fp_s[p]) for p in family]
-    colors = [OLIVE if p in weak_set else TEAL for p in family]
+    colors = [AMBER if p in weak_set else TEAL for p in family]
     eps = d["eps"]
 
-    fig, ax = plt.subplots(figsize=(6.4, 3.7))
+    fig, ax = plt.subplots(figsize=(7.0, 4.0))
     ax.set_axisbelow(True)
-    ax.yaxis.grid(True)
+    ax.xaxis.grid(True)
 
-    bars = ax.bar(family, devs, color=colors, width=0.62)
-    ax.axhline(eps, color=BORDX, linestyle="-", linewidth=1.4,
-               label=fr"tolerance $\varepsilon = {eps}$")
+    y = np.arange(len(family))
+    xmax = max(max(devs), eps) * 1.20
 
-    ax.set_ylabel(
+    for yi, v, c in zip(y, devs, colors):
+        ax.plot([0, v], [yi, yi], color=c, linewidth=1.8,
+                alpha=0.85, zorder=2)
+        ax.scatter([v], [yi], s=130, color=c,
+                   edgecolor="white", linewidth=1.2, zorder=3)
+        ax.text(v + xmax * 0.018, yi, f"{v:.3f}",
+                va="center", fontsize=9.2, color=SLATE)
+
+    ax.axvline(eps, color=BORDX, linewidth=1.4, zorder=1)
+
+    proxy_weak = Line2D([0], [0], marker="o", color="w",
+                        markerfacecolor=AMBER, markersize=10,
+                        label="weak family")
+    proxy_complete = Line2D([0], [0], marker="o", color="w",
+                            markerfacecolor=TEAL, markersize=10,
+                            label="complete family")
+    proxy_tol = Line2D([0], [0], color=BORDX, linewidth=1.4,
+                       label=fr"tolerance $\varepsilon = {eps}$")
+    ax.legend(handles=[proxy_weak, proxy_complete, proxy_tol],
+              loc="lower right")
+
+    ax.set_yticks(y)
+    ax.set_yticklabels(family)
+    ax.set_ylim(-0.7, len(family) - 0.3)
+    ax.invert_yaxis()
+    ax.set_xlim(-xmax * 0.01, xmax)
+    ax.set_xlabel(
         r"$|\langle P \rangle_{\mathrm{honest}}"
         r" - \langle P \rangle_{\mathrm{sneaky}}|$"
     )
-    ax.set_title("Per-observable deviation: honest vs sneaky channel")
-
-    ymax = max(max(devs), eps) * 1.18
-    ax.set_ylim(0, ymax)
-    for b, v in zip(bars, devs):
-        ax.text(b.get_x() + b.get_width() / 2, v + ymax * 0.018,
-                f"{v:.3f}", ha="center", va="bottom",
-                fontsize=8.8, color=SLATE)
-
-    from matplotlib.patches import Patch
-    handles = [
-        Patch(facecolor=OLIVE, label="weak family"),
-        Patch(facecolor=TEAL,  label="complete family"),
-    ] + ax.get_legend_handles_labels()[0]
-    ax.legend(handles=handles, loc="upper right")
 
     fig.tight_layout()
     fig.savefig(out_path, dpi=DPI)
@@ -111,7 +133,8 @@ def fig_detection_bars(d, out_path):
 
 
 def fig_sample_curve(d, out_path):
-    """log-x line plot of detection rate vs shot budget."""
+    """vertical lollipops on a log-x axis, target confidence line
+    in bordeaux. budget labels float above the markers."""
     labels = list(d["results"].keys())
     shots = [d["results"][k]["shots_per_obs"] for k in labels]
     rates = [d["results"][k]["detection_rate"] for k in labels]
@@ -122,30 +145,27 @@ def fig_sample_curve(d, out_path):
     rates = [rates[i] for i in order]
     labels = [labels[i] for i in order]
 
-    fig, ax = plt.subplots(figsize=(6.0, 3.7))
+    fig, ax = plt.subplots(figsize=(6.4, 3.6))
     ax.set_axisbelow(True)
-    ax.yaxis.grid(True)
     ax.xaxis.grid(True)
+    ax.yaxis.grid(True)
 
-    ax.plot(shots, rates, "-", color=TEAL, linewidth=1.6, zorder=2)
-    ax.scatter(shots, rates, s=58, color=TEAL,
-               edgecolor="white", linewidth=1.0, zorder=3)
+    for s, r in zip(shots, rates):
+        ax.plot([s, s], [0, r], color=TEAL, linewidth=1.8,
+                alpha=0.5, zorder=2)
+    ax.scatter(shots, rates, s=150, marker="D", color=TEAL,
+               edgecolor="white", linewidth=1.2, zorder=3)
+    for s, r, lab in zip(shots, rates, labels):
+        ax.annotate(lab, (s, r), textcoords="offset points",
+                    xytext=(0, 12), ha="center", fontsize=9, color=SLATE)
 
-    ax.axhline(target, color=BORDX, linestyle="-", linewidth=1.3,
-               label=fr"target $1 - \eta = {target:.2f}$")
-
-    for x, y, lab in zip(shots, rates, labels):
-        ax.annotate(
-            lab, (x, y),
-            textcoords="offset points", xytext=(8, -2),
-            fontsize=9, color=SLATE,
-        )
+    ax.axhline(target, color=BORDX, linewidth=1.4,
+               label=fr"target $1-\eta = {target}$")
 
     ax.set_xscale("log")
     ax.set_xlabel("shots per observable")
     ax.set_ylabel("empirical detection rate")
-    ax.set_ylim(-0.04, 1.06)
-    ax.set_title("Detection rate vs measurement budget")
+    ax.set_ylim(-0.04, 1.18)
     ax.legend(loc="lower right")
 
     fig.tight_layout()
@@ -155,65 +175,84 @@ def fig_sample_curve(d, out_path):
 
 
 def fig_drift_panel(d, out_path):
-    """two-panel: fingerprint per timepoint (top), pairwise max
-    deviations (bottom)."""
+    """two panels:
+      top - jittered markers with three line styles per timepoint
+      bottom - horizontal lollipop pairwise drift with d_drift line
+    no titles; the caption in latex carries the description."""
     fps = d["fingerprints"]
     family = list(fps[0].keys())
     n_t = len(fps)
     vals = np.array([[fps[t][p] for p in family] for t in range(n_t)])
 
     d_drift = d.get("d_drift_typ", None)
-    interval = d.get("tolerance_interval", None)
 
     fig, (ax1, ax2) = plt.subplots(
-        2, 1, figsize=(6.4, 5.4),
+        2, 1, figsize=(7.2, 5.6),
         gridspec_kw={"height_ratios": [2, 1.2]},
     )
-    for ax in (ax1, ax2):
-        ax.set_axisbelow(True)
-        ax.yaxis.grid(True)
 
-    colors = [TEAL, OLIVE, BORDX, "#5a5a8a"][:n_t]
-    markers = ["o", "s", "^", "D"][:n_t]
+    # top: jittered markers + connecting lines with distinct styles
+    ax1.set_axisbelow(True)
+    ax1.yaxis.grid(True)
     x = np.arange(len(family))
+
+    tp_colors = [T0, T1, T2, BORDX][:n_t]
+    tp_markers = ["h", "D", "P", "X"][:n_t]
+    tp_lstyles = ["-", (0, (5, 2)), (0, (1, 2)), (0, (3, 1, 1, 1))][:n_t]
+    if n_t == 1:
+        offsets = [0.0]
+    else:
+        span = 0.20
+        offsets = np.linspace(-span / 2, span / 2, n_t)
+
+    # faint vertical guides for each observable
+    for xi in x:
+        ax1.axvline(xi, color=MIST, linewidth=0.6, zorder=1)
+
     for t in range(n_t):
-        ax1.plot(x, vals[t],
-                 color=colors[t],
-                 marker=markers[t],
-                 markersize=6.5,
-                 linewidth=1.5,
-                 label=f"timepoint $t_{{{t}}}$")
+        xj = x + offsets[t]
+        ax1.plot(xj, vals[t], color=tp_colors[t],
+                 linewidth=1.6, linestyle=tp_lstyles[t],
+                 alpha=0.85, zorder=2)
+        ax1.scatter(xj, vals[t], s=150, marker=tp_markers[t],
+                    color=tp_colors[t], edgecolor="white",
+                    linewidth=1.4, zorder=3,
+                    label=f"timepoint $t_{{{t}}}$")
     ax1.set_xticks(x)
     ax1.set_xticklabels(family)
     ax1.set_ylabel(r"$\langle P \rangle$")
-    ax1.set_title("Honest fingerprint across timepoints")
-    ax1.legend(loc="best", ncol=n_t)
+    ax1.legend(loc="lower right", ncol=min(n_t, 3))
 
+    # bottom: pairwise lollipop
     pairwise = d.get("pairwise_deviations", {})
     if pairwise:
+        ax2.set_axisbelow(True)
+        ax2.xaxis.grid(True)
         labels = list(pairwise.keys())
-        values = [pairwise[k] for k in labels]
-        y = np.arange(len(labels))
-        ax2.barh(y, values, color=TEAL, height=0.5)
-        for yi, v in zip(y, values):
-            ax2.text(v + max(values) * 0.02, yi,
-                     f"{v:.3f}", va="center", fontsize=9, color=SLATE)
-        ax2.set_yticks(y)
-        ax2.set_yticklabels(labels)
-        ax2.set_xlabel("pairwise max deviation")
+        pvals = [pairwise[k] for k in labels]
+        yb = np.arange(len(labels))
+        xmax = max(pvals + [d_drift if d_drift is not None else 0]) * 1.35
+        for yi, v in zip(yb, pvals):
+            ax2.plot([0, v], [yi, yi], color=TEAL, linewidth=1.8,
+                     alpha=0.85, zorder=2)
+            ax2.scatter([v], [yi], s=130, color=TEAL,
+                        edgecolor="white", linewidth=1.2, zorder=3)
+            ax2.text(v + xmax * 0.015, yi, f"{v:.3f}",
+                     va="center", fontsize=9.2, color=SLATE)
         if d_drift is not None:
-            ax2.axvline(d_drift, color=BORDX, linestyle="-",
-                        linewidth=1.3,
-                        label=fr"$d_{{\mathrm{{drift}}}}^{{\mathrm{{typ}}}}"
-                              fr" = {d_drift:.3f}$")
-            ax2.legend(loc="lower right")
-        title = "Pairwise observable drift"
-        if interval:
-            title += (
-                f"\ntolerance interval "
-                f"[{interval[0]:.3f}, {interval[1]:.3f}]"
+            ax2.axvline(
+                d_drift, color=BORDX, linewidth=1.4,
+                label=(
+                    fr"$d_{{\mathrm{{drift}}}}^{{\mathrm{{typ}}}}"
+                    fr" = {d_drift:.3f}$"
+                ),
             )
-        ax2.set_title(title)
+            ax2.legend(loc="lower right")
+        ax2.set_yticks(yb)
+        ax2.set_yticklabels(labels)
+        ax2.set_xlim(0, xmax)
+        ax2.invert_yaxis()
+        ax2.set_xlabel("pairwise max deviation")
 
     fig.tight_layout()
     fig.savefig(out_path, dpi=DPI)

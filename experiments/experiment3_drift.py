@@ -17,7 +17,7 @@ procedure of section 5.10.
 
 import argparse
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
 
@@ -145,7 +145,7 @@ def main():
               "(iii) richer observable family.")
         eps_rec = None
 
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     out_path = OUTDIR / f"experiment3_drift_{backend.name}_{timestamp}.json"
     save_json({
         "experiment": "drift_observation",

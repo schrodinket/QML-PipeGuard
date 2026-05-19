@@ -1,6 +1,7 @@
 """
 2-qubit qsvm channels: honest (zz feature map with inversion test)
-and sneaky (same plus s-gate insertion before measurement).
+and sneaky variants (s-gate or small-angle rz insertion before
+measurement).
 
 the inversion test computes |<phi(x_i)|phi(x_j)>|^2 as the
 probability of measuring |00> after applying U_phi(x_i) then
@@ -13,6 +14,11 @@ from qiskit.circuit.library import ZZFeatureMap
 
 
 N_QUBITS = 2
+
+# angle for the weakened sneaky variant. pi/8 is small enough that
+# the sneaky deviation lands near the contract tolerance, which is
+# the regime where the sample complexity bound is non-trivial.
+WEAK_SNEAKY_ANGLE = np.pi / 8
 
 
 def feature_map(reps=2):
@@ -39,14 +45,28 @@ def honest_channel(x_i, x_j):
 
 
 def sneaky_channel(x_i, x_j):
-    """same as honest, but with an s-gate inserted on every qubit
-    just before measurement. preserves <Z> on the output but
-    rotates <X> and <Y>, so the sneaky fingerprint hides under a
-    z-only contract."""
+    """strong sneaky: s-gate (pi/2 rotation) on every qubit before
+    measurement. preserves <Z> exactly but maps <X> -> <Y> and
+    <Y> -> -<X>, producing a large deviation on the off-diagonal
+    paulis. used in the main detection experiment."""
     qc = honest_channel(x_i, x_j)
     qc.name = "sneaky"
     for q in range(N_QUBITS):
         qc.s(q)
+    return qc
+
+
+def sneaky_channel_weak(x_i, x_j, angle=WEAK_SNEAKY_ANGLE):
+    """weakened sneaky: rz(angle) rotation on every qubit before
+    measurement. preserves <Z> and shifts <X>, <Y> by a small,
+    angle-controlled amount. used in the sample complexity
+    validation experiment, where the deviation should sit near
+    the contract tolerance rather than far above it.
+    """
+    qc = honest_channel(x_i, x_j)
+    qc.name = f"sneaky_weak({angle:.3f})"
+    for q in range(N_QUBITS):
+        qc.rz(angle, q)
     return qc
 
 

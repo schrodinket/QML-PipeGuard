@@ -12,7 +12,7 @@ sanity-checking before any hardware run.
 
 import argparse
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
 
@@ -138,7 +138,7 @@ def main():
     print(f"  worst deviation = {summary_complete['worst_deviation']:.4f}")
     print(f"  halted = {summary_complete['halted']}")
 
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     out_path = OUTDIR / f"experiment1_{backend.name}_{timestamp}.json"
     save_json({
         "experiment": "detection",

@@ -1,24 +1,30 @@
 """
 experiment 2: empirical validation of theorem 4 on the aer
 simulator. measures the detection success rate at N, N/10, N/100
-shots over many trials, with no qpu cost.
+shots over many trials.
 
-defaults to noiseless aer (formula tracks pure shot noise).
-pass --noise <fake_backend> to repeat the trials with a noise
-model; useful to see how hardware noise widens the gap between
-the formula and reality.
+uses the weakened sneaky variant (small-angle rz insertion) so the
+true deviation lands close to the contract tolerance. with the
+strong s-gate sneaky used in experiment 1, the deviation is far
+above tolerance and even very small shot counts succeed, which
+makes the formula's tightness untestable. the weakened variant
+puts the experiment in the regime the bound is designed for.
+
+defaults to noiseless aer. pass --noise <fake_backend> to repeat
+with a backend-derived noise model.
 """
 
 import argparse
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.channels import (
-    honest_channel, sneaky_channel, with_pauli_measurement,
+    honest_channel, sneaky_channel_weak, with_pauli_measurement,
+    WEAK_SNEAKY_ANGLE,
 )
 from src.observables import (
     complete_family, frame_bound,
@@ -54,7 +60,7 @@ def fingerprint(channel_fn, family, shots, noise_backend=None):
 
 def trial(shots_per_obs, family, eps, noise_backend=None):
     fp_h = fingerprint(honest_channel, family, shots_per_obs, noise_backend)
-    fp_s = fingerprint(sneaky_channel, family, shots_per_obs, noise_backend)
+    fp_s = fingerprint(sneaky_channel_weak, family, shots_per_obs, noise_backend)
     cfg = VerifierConfig(eps=eps, halt_on_violation=False)
     log = run_verifier(fp_h, fp_s, family, cfg, seed=None)
     return len(log.beyond_tolerance_events()) > 0
@@ -81,6 +87,7 @@ def main():
 
     gamma = detection_margin(args.delta, args.eps, C)
 
+    print(f"sneaky variant: weak (rz angle = {WEAK_SNEAKY_ANGLE:.4f} rad)")
     if args.noise:
         print(f"noise model: {args.noise}")
     else:
@@ -112,11 +119,13 @@ def main():
         print(f"{label}: {successes}/{args.trials} = {rate:.2%} detection")
         print()
 
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     tag = args.noise if args.noise else "ideal"
     out_path = OUTDIR / f"experiment2_sample_{tag}_{timestamp}.json"
     save_json({
         "experiment": "sample_complexity_validation",
+        "sneaky_variant": "weak",
+        "sneaky_angle": float(WEAK_SNEAKY_ANGLE),
         "noise_backend": args.noise,
         "delta": args.delta,
         "eps": args.eps,

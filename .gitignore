@@ -8,6 +8,7 @@ venv/
 # results (keep structure, drop content)
 results/*.json
 results/figures/
+results/figures_*/
 
 # editor
 .vscode/
