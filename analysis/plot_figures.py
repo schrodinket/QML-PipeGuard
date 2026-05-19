@@ -3,7 +3,7 @@ paper-ready figures for the experiment json outputs.
 
   fig_detection_bars : weak vs complete observable deviations,
                        horizontal lollipops with tolerance line
-  fig_sample_curve   : detection rate vs shot budget, vertical
+  fig_sample_curve   : tpr and fpr vs shot budget, vertical
                        lollipops on a log-x axis
   fig_drift_panel    : fingerprint per timepoint (jittered markers
                        with three distinct line styles) and a
@@ -11,8 +11,8 @@ paper-ready figures for the experiment json outputs.
 
 palette: deep teal (primary), amber (weak family), and a
 magenta-gold-teal trio for the three drift timepoints. bordeaux
-is reserved for threshold lines so it never collides with a
-timepoint marker color.
+is reserved for threshold lines and false positives so it never
+collides with a timepoint marker color.
 
 no titles or in-figure descriptive text are written here; figure
 text belongs in the latex caption.
@@ -31,9 +31,9 @@ from matplotlib.lines import Line2D
 
 # --- visual constants ---
 
-TEAL    = "#1f5f6b"   # primary
+TEAL    = "#1f5f6b"   # primary, also tpr in sample curve
 AMBER   = "#c08a1c"   # weak family
-BORDX   = "#9a3a3a"   # thresholds (tolerance line, d_drift line)
+BORDX   = "#9a3a3a"   # thresholds and fpr
 SLATE   = "#3a3a44"   # text
 MIST    = "#d8d8d2"   # grid
 
@@ -75,8 +75,7 @@ def load(p):
 
 def fig_detection_bars(d, out_path):
     """horizontal lollipops, weak family in amber, complete family
-    in teal, tolerance line in bordeaux. no title, no in-figure
-    eps label (the legend entry carries the value)."""
+    in teal, tolerance line in bordeaux."""
     weak_set = set(d.get("weak_family", []))
     family = d["complete_family"]
     if weak_set and not (weak_set <= set(family)):
@@ -133,40 +132,72 @@ def fig_detection_bars(d, out_path):
 
 
 def fig_sample_curve(d, out_path):
-    """vertical lollipops on a log-x axis, target confidence line
-    in bordeaux. budget labels float above the markers."""
+    """vertical lollipops on a log-x axis showing tpr (true
+    positive rate, teal) and fpr (false positive rate, bordeaux)
+    for each shot budget. dashed lines at the target tpr (1-eta)
+    and target fpr (eta) provide reference."""
     labels = list(d["results"].keys())
     shots = [d["results"][k]["shots_per_obs"] for k in labels]
-    rates = [d["results"][k]["detection_rate"] for k in labels]
-    target = 1 - d["eta"]
+    # support both new (tpr/fpr) and old (detection_rate) format
+    if "tpr" in d["results"][labels[0]]:
+        tprs = [d["results"][k]["tpr"] for k in labels]
+        fprs = [d["results"][k]["fpr"] for k in labels]
+    else:
+        tprs = [d["results"][k]["detection_rate"] for k in labels]
+        fprs = None
+    target_tpr = 1 - d["eta"]
+    target_fpr = d["eta"]
 
     order = np.argsort(shots)
     shots = [shots[i] for i in order]
-    rates = [rates[i] for i in order]
+    tprs = [tprs[i] for i in order]
+    if fprs is not None:
+        fprs = [fprs[i] for i in order]
     labels = [labels[i] for i in order]
 
-    fig, ax = plt.subplots(figsize=(6.4, 3.6))
+    fig, ax = plt.subplots(figsize=(6.8, 3.8))
     ax.set_axisbelow(True)
     ax.xaxis.grid(True)
     ax.yaxis.grid(True)
 
-    for s, r in zip(shots, rates):
-        ax.plot([s, s], [0, r], color=TEAL, linewidth=1.8,
-                alpha=0.5, zorder=2)
-    ax.scatter(shots, rates, s=150, marker="D", color=TEAL,
-               edgecolor="white", linewidth=1.2, zorder=3)
-    for s, r, lab in zip(shots, rates, labels):
-        ax.annotate(lab, (s, r), textcoords="offset points",
-                    xytext=(0, 12), ha="center", fontsize=9, color=SLATE)
+    # tpr lollipops in teal, slightly offset to the left
+    offset = 1.08
+    for s, t in zip(shots, tprs):
+        ax.plot([s / offset, s / offset], [0, t],
+                color=TEAL, linewidth=1.8, alpha=0.55, zorder=2)
+    ax.scatter([s / offset for s in shots], tprs, s=140,
+               marker="D", color=TEAL, edgecolor="white",
+               linewidth=1.2, zorder=3, label="TPR (sneaky)")
 
-    ax.axhline(target, color=BORDX, linewidth=1.4,
-               label=fr"target $1-\eta = {target}$")
+    # fpr lollipops in bordeaux, slightly offset to the right
+    if fprs is not None:
+        for s, f in zip(shots, fprs):
+            ax.plot([s * offset, s * offset], [0, f],
+                    color=BORDX, linewidth=1.8, alpha=0.55, zorder=2)
+        ax.scatter([s * offset for s in shots], fprs, s=140,
+                   marker="X", color=BORDX, edgecolor="white",
+                   linewidth=1.2, zorder=3, label="FPR (honest)")
 
+    # budget labels above the markers
+    for s, t, lab in zip(shots, tprs, labels):
+        ax.annotate(lab, (s, max(t, 1.0)),
+                    textcoords="offset points",
+                    xytext=(0, 12), ha="center",
+                    fontsize=9, color=SLATE)
+
+    # reference lines
+    ax.axhline(target_tpr, color=TEAL, linestyle=(0, (4, 3)),
+               linewidth=1.0, alpha=0.7,
+               label=fr"target TPR = $1-\eta = {target_tpr}$")
+    ax.axhline(target_fpr, color=BORDX, linestyle=(0, (4, 3)),
+               linewidth=1.0, alpha=0.7,
+               label=fr"target FPR = $\eta = {target_fpr}$")
     ax.set_xscale("log")
+    ax.set_xlim(min(shots) * 0.55, max(shots) * 1.8)
     ax.set_xlabel("shots per observable")
-    ax.set_ylabel("empirical detection rate")
-    ax.set_ylim(-0.04, 1.18)
-    ax.legend(loc="lower right")
+    ax.set_ylabel("rate")
+    ax.set_ylim(-0.04, 1.20)
+    ax.legend(loc="center right", fontsize=9)
 
     fig.tight_layout()
     fig.savefig(out_path, dpi=DPI)

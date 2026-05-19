@@ -18,7 +18,7 @@ N_QUBITS = 2
 # angle for the weakened sneaky variant. pi/8 is small enough that
 # the sneaky deviation lands near the contract tolerance, which is
 # the regime where the sample complexity bound is non-trivial.
-WEAK_SNEAKY_ANGLE = np.pi / 8
+WEAK_SNEAKY_ANGLE = np.pi / 12
 
 
 def feature_map(reps=2):
