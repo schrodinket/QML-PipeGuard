@@ -9,6 +9,9 @@ venv/
 results/*.json
 results/figures/
 results/figures_*/
+# but always keep archived real-hardware runs
+!results/qpu_runs/
+!results/qpu_runs/*.json
 
 # editor
 .vscode/

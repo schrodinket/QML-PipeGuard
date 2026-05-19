@@ -1,4 +1,4 @@
-# qml-pipeguard
+﻿# qml-pipeguard
 
 Companion code for the paper *QML-PipeGuard: Drift-Aware Behavioral Fingerprinting for Quantum Machine Learning Pipeline Integrity* (Yeniaras, 2026).
 
@@ -131,6 +131,69 @@ Available fake backends for the noise model: `fake_fez`, `fake_brisbane`, `fake_
 | Theorem 4 sample budget formula | `src/sample_complexity.py` |
 | Observable contract and audit log | `src/integrity.py` |
 
+
+## Real QPU artifacts (Section 6.2, 6.4)
+
+The directory `results/qpu_runs/` contains the raw outputs and summaries from the two real-hardware experiments reported in Sections 6.2 (detection) and 6.4 (drift) of the paper. Both jobs ran on the IBM Heron r2 processor (`ibm_fez`) through the IBM Quantum Open Plan.
+
+### Detection experiment (Section 6.2)
+
+| Field | Value |
+| --- | --- |
+| Backend | `ibm_fez` (IBM Heron r2, 156 qubits) |
+| Job ID | `d866g0h789is738v9am0` |
+| Date | 19 May 2026, 13:40 UTC |
+| Plan | IBM Quantum Open Plan |
+| Shots | 7,439 per circuit |
+| Total circuits | 14 (honest + sneaky on a 7-Pauli family) |
+| Queue waiting | ≈ 15 seconds |
+| Running time | ≈ 30 seconds |
+| Total wall time | 45.8 seconds |
+
+Headline numbers:
+
+| Family | Worst observable deviation | Halt under contract |
+| --- | --- | --- |
+| Weak `{ZZ}` | 0.0081 | False |
+| Complete `{X,Y,Z}` on each qubit | 0.4966 | True |
+
+The sneaky channel passes the weak contract (deviation well below ε = 0.1) and is caught by the complete contract (deviation roughly 5× the tolerance), reproducing the prediction of Theorem 1 on real hardware.
+
+### Drift experiment (Section 6.4)
+
+| Field | Value |
+| --- | --- |
+| Backend | `ibm_fez` (IBM Heron r2, 156 qubits) |
+| Job ID | `d866guh789is738v9c60` |
+| Date | 19 May 2026, 13:42 UTC |
+| Plan | IBM Quantum Open Plan |
+| Shots | 7,439 per circuit |
+| Total circuits | 18 (3 timepoints × 6-Pauli complete family) |
+| Queue waiting | ≈ 15 seconds |
+| Running time | ≈ 30 seconds |
+| Total wall time | 45.8 seconds |
+
+Headline numbers:
+
+| Quantity | Value |
+| --- | --- |
+| Pairwise drift t0 ↔ t1 | 0.0266 |
+| Pairwise drift t0 ↔ t2 | 0.0328 |
+| Pairwise drift t1 ↔ t2 | 0.0226 |
+| `d_drift_typ` | 0.0328 |
+| Tolerance interval | [0.0328, 0.1768] (non-empty) |
+| Recommended ε from calibration | 0.1048 |
+
+The interval is non-empty, so the calibration procedure of Section 5.10 converges; the recommended ε agrees with the a priori choice ε = 0.1 used in the detection experiment to two decimal places.
+
+### Files
+
+- `results/qpu_runs/experiment1_ibm_fez_20260519_134001.json` — full output of the detection job, including raw shot counts, expectation estimates, and the audit log under both the weak and the complete contract.
+- `results/qpu_runs/experiment3_drift_ibm_fez_20260519_134201.json` — full output of the drift job, including the three honest fingerprints, pairwise deviations, and the tolerance-interval calculation.
+
+### Re-running the analysis without resubmitting
+
+To regenerate the figures and tables from the archived JSON files without consuming any QPU time:
 ## Related work
 
 QML-PipeGuard sits in the broader literature on quantum-software contracts and runtime verification. The integrity engine in `src/integrity.py` shares structural ideas with the behavioral-subtyping line of work in classical software (Liskov-Wing 1994) and its recent quantum extensions, including the QCIVET runtime engine (<https://github.com/schrodinket/QCIVET>). The sneaky-substitution construction (S-gate insertion) is a standard adversary template at the channel level. The implementation here is self-contained and does not depend on any external behavioral-subtyping library; the paper provides the theoretical scaffolding (detection theorem, sample complexity bound, drift corollary) on its own terms.
