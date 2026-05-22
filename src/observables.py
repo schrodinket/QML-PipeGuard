@@ -29,15 +29,18 @@ def complete_family():
 def frame_bound(family):
     """frame-bound constant C(O_A) for a pauli family on 2 qubits.
 
-    for the full single-qubit-on-each-wire family with B=1, the
-    standard frame bound is 2*sqrt(2) per wire, giving sqrt(2)
-    times the single-qubit value when combined. for the weak
-    family (just ZZ) the bound is loose and we use a conservative
-    upper estimate.
+    for the full single-qubit-on-each-wire family with B=1, the tight
+    frame-bound constant is C = sqrt(3), derived in theorem 1 (step 2)
+    of the paper via a cauchy-schwarz argument on the bloch decomposition.
+    this refines the value 2*sqrt(2) used in concurrent work by a factor
+    of sqrt(2/3) ~= 0.816, with the equality witness sigma* = (X+Y+Z)/(2*sqrt(3)).
+
+    for the weak family (just ZZ) the family is not informationally complete
+    and no useful frame bound exists; we return +inf as a sentinel.
     """
     import math
     if family == COMPLETE_FAMILY:
-        return 2.0 * math.sqrt(2.0)
+        return math.sqrt(3.0)
     # weak family: not informationally complete, no useful bound
     return float("inf")
 

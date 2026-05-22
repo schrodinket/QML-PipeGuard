@@ -10,9 +10,9 @@ paper-ready figures for the experiment json outputs.
                        horizontal lollipop pairwise drift panel
 
 palette: deep teal (primary), amber (weak family), and a
-magenta-gold-teal trio for the three drift timepoints. bordeaux
-is reserved for threshold lines and false positives so it never
-collides with a timepoint marker color.
+royal blue / royal purple / forest green trio for the three drift
+timepoints. bordeaux is reserved for threshold lines and false
+positives so it never collides with a timepoint marker color.
 
 no titles or in-figure descriptive text are written here; figure
 text belongs in the latex caption.
@@ -37,10 +37,10 @@ BORDX   = "#9a3a3a"   # thresholds and fpr
 SLATE   = "#3a3a44"   # text
 MIST    = "#d8d8d2"   # grid
 
-# drift timepoint palette
-T0 = "#C71585"   # magenta
-T1 = "#FFB300"   # gold
-T2 = "#00897B"   # teal-green
+# drift timepoint palette (matches the layer-stack figure in the paper)
+T0 = "#1565C0"   # royal blue
+T1 = "#5B2C91"   # royal purple
+T2 = "#1B5E20"   # forest green
 
 DPI = 220
 

@@ -20,8 +20,14 @@ def detection_margin(delta, eps, C):
     return delta / C - eps
 
 
-def compute_N(delta, eps, k, eta, B=1.0, C=2.0 * math.sqrt(2.0)):
-    """total shot budget needed for confidence 1-eta detection."""
+def compute_N(delta, eps, k, eta, B=1.0, C=math.sqrt(3.0)):
+    """total shot budget needed for confidence 1-eta detection.
+
+    default C = sqrt(3) is the tight frame-bound constant for the
+    single-qubit pauli family derived in theorem 1 (step 2) of the
+    paper. callers passing a different family should supply the
+    corresponding C via frame_bound(family) from src.observables.
+    """
     gamma = detection_margin(delta, eps, C)
     if gamma <= 0:
         raise ValueError(
