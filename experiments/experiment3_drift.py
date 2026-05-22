@@ -69,7 +69,7 @@ def main():
                          "(e.g. fake_fez); only used with --simulator")
     ap.add_argument("--shots", type=int, default=None)
     ap.add_argument("--delta", type=float, default=0.5)
-    ap.add_argument("--eps", type=float, default=0.1)
+    ap.add_argument("--eps", type=float, default=0.15)
     ap.add_argument("--eta", type=float, default=0.05)
     ap.add_argument("--timepoints", type=int, default=N_TIMEPOINTS)
     args = ap.parse_args()

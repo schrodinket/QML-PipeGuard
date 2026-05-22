@@ -66,7 +66,7 @@ def main():
                     help="shots per circuit; default: theorem 4 derived")
     ap.add_argument("--delta", type=float, default=0.5,
                     help="adversarial separation parameter")
-    ap.add_argument("--eps", type=float, default=0.1,
+    ap.add_argument("--eps", type=float, default=0.15,
                     help="contract tolerance")
     ap.add_argument("--eta", type=float, default=0.05,
                     help="failure probability (confidence = 1-eta)")

@@ -81,7 +81,7 @@ def detect(fp_meas, fp_ref, family, eps):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--delta", type=float, default=0.5)
-    ap.add_argument("--eps", type=float, default=0.1)
+    ap.add_argument("--eps", type=float, default=0.15)
     ap.add_argument("--eta", type=float, default=0.05)
     ap.add_argument("--trials", type=int, default=N_TRIALS)
     ap.add_argument("--noise", default=None,
