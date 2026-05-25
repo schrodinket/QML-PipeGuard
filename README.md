@@ -215,7 +215,7 @@ python analysis/analyze_results.py results/qpu_runs/experiment*_ibm_fez_*.json
 python analysis/plot_figures.py results/qpu_runs/experiment*_ibm_fez_*.json --outdir results/figures
 ```
 
-## Related work
+
 
 
 ## License
