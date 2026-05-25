@@ -217,7 +217,6 @@ python analysis/plot_figures.py results/qpu_runs/experiment*_ibm_fez_*.json --ou
 
 ## Related work
 
-QML-PipeGuard sits in the broader literature on quantum-software contracts and runtime verification. The integrity engine in `src/integrity.py` shares structural ideas with the behavioral-subtyping line of work in classical software (Liskov-Wing 1994) and its quantum extensions. The sneaky-substitution construction (S-gate insertion) is a standard adversary template at the channel level. The implementation here is self-contained and does not depend on any external behavioral-subtyping library; the paper *QML-PipeGuard: Drift-Aware Behavioral Fingerprinting for QML Pipeline Integrity* (Yeniaras 2026) provides the theoretical scaffolding (detection theorem, sample complexity bound, drift corollary) on its own terms.
 
 ## License
 
