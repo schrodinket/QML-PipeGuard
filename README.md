@@ -1,8 +1,13 @@
 # qml-pipeguard
 
-Companion code for the paper *QML-PipeGuard: Drift-Aware Behavioral Fingerprinting for Quantum Machine Learning Pipeline Integrity* (Yeniaras, 2026).
+[![arXiv](https://img.shields.io/badge/arXiv-2605.25066-b31b1b.svg)](https://arxiv.org/abs/2605.25066)
+[![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
 
-This repository implements the dual-mode verification protocol of the paper and the three experiments reported in Section 6, on a 2-qubit ZZFeatureMap QSVM pipeline. Two experiments run on IBM Quantum hardware (Heron r2, `ibm_fez` by default), one runs on the Aer simulator.
+This repository accompanies the paper *QML-PipeGuard: Drift-Aware Behavioral Fingerprinting for Quantum Machine Learning Pipeline Integrity* (Yeniaras, 2026), available on arXiv at [arXiv:2605.25066](https://arxiv.org/abs/2605.25066).
+
+The paper introduces a dual-mode behavioral-fingerprinting protocol for quantum machine learning pipelines, in which a single calibrated tolerance simultaneously accommodates legitimate device drift and detects adversarial channel substitutions. The framework rests on a tight frame-bound constant (C=√3 for the local Pauli family), a sample-complexity theorem with explicit constants, and a drift corollary that defines the operational tolerance interval. Three experiments — two on IBM Heron r2 hardware (`ibm_fez`), one on the Aer simulator — validate the protocol on a 2-qubit ZZFeatureMap QSVM pipeline.
+
+This repository provides the complete implementation of the verification protocol, the three reported experiments, the numerical frame-bound calculations behind Appendix A.3, and the raw JSON artifacts from the two real-hardware runs so that every table, figure, and theorem instance in the paper can be reproduced from scratch.
 
 ## Layout
 
@@ -215,9 +220,25 @@ python analysis/analyze_results.py results/qpu_runs/experiment*_ibm_fez_*.json
 python analysis/plot_figures.py results/qpu_runs/experiment*_ibm_fez_*.json --outdir results/figures
 ```
 
+## Citation
 
+If you use this code or build on this work, please cite the paper:
 
+```bibtex
+@misc{yeniaras2026qmlpipeguarddriftawarebehavioralfingerprinting,
+      title={QML-PipeGuard: Drift-Aware Behavioral Fingerprinting for Quantum Machine Learning Pipeline Integrity}, 
+      author={Esra Yeniaras},
+      year={2026},
+      eprint={2605.25066},
+      archivePrefix={arXiv},
+      primaryClass={quant-ph},
+      url={https://arxiv.org/abs/2605.25066}, 
+}
+```
+
+The paper provides the theoretical scaffolding (detection theorem, sample-complexity bound, drift corollary) and the hardware-validation results that this repository reproduces.
 
 ## License
 
-MIT. See `LICENSE`.
+This repository is released under the Creative Commons Attribution 4.0 International License (CC BY 4.0). See [`LICENSE`](LICENSE) for the full text, or visit https://creativecommons.org/licenses/by/4.0/ for a human-readable summary. You are free to share and adapt the material for any purpose, including commercially, as long as appropriate credit is given.
+
